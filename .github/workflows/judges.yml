@@ -75,18 +75,42 @@ jobs:
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           exit $EXIT_CODE
 
-      - name: Collect SARIF files
+      - name: Merge SARIF files into single upload
         if: always()
         run: |
-          mkdir -p sarif-results
-          find . -maxdepth 1 -name '*.sarif' -exec mv {} sarif-results/ \;
-          echo "SARIF files collected: $(ls sarif-results/ 2>/dev/null | wc -l)"
+          # Merge all per-file SARIF results into one file with a single run
+          # CodeQL requires one run per category per upload
+          SARIF_FILES=$(find . -maxdepth 1 -name '*.sarif' -type f)
+          if [ -z "$SARIF_FILES" ]; then
+            echo "No SARIF files found"
+            exit 0
+          fi
+          # Merge: take the first file's structure, combine all results and rules
+          jq -s '
+            {
+              "$schema": .[0]."$schema",
+              "version": .[0].version,
+              "runs": [{
+                "tool": .[0].runs[0].tool,
+                "results": [.[].runs[0].results[] // empty],
+                "columnKind": "utf16CodeUnits"
+              }]
+            }
+          ' $SARIF_FILES > judges-results.sarif 2>/dev/null || true
+          if jq empty judges-results.sarif 2>/dev/null; then
+            echo "Merged $(echo $SARIF_FILES | wc -w) SARIF files into judges-results.sarif"
+            echo "Total results: $(jq '.runs[0].results | length' judges-results.sarif)"
+          else
+            echo "SARIF merge failed"
+            rm -f judges-results.sarif
+          fi
 
       - name: Upload SARIF to GitHub Code Scanning
-        if: always() && hashFiles('sarif-results/*.sarif') != ''
+        if: always() && hashFiles('judges-results.sarif') != ''
         uses: github/codeql-action/upload-sarif@v3
         with:
-          sarif_file: sarif-results
+          sarif_file: judges-results.sarif
+          category: judges-panel
         continue-on-error: true
 
       - name: Upload report artifact
