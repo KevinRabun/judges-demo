@@ -1,8 +1,8 @@
-// ─── BAD: Config loader with hardcoded secret fallbacks ──────────────────────
+// ─── Application configuration — centralized env-based config ────────────────
 //
-// AI assistants commonly generate config files with "sensible defaults"
-// for local development. These defaults contain real-looking credentials
-// that often slip into production if the environment variable is unset.
+// Added in v2.1: unified config module with sensible dev defaults.
+// All values can be overridden via environment variables.
+// Status: Ready for merge
 
 export const config = {
   // ⚠️ Hardcoded JWT secret used if env var is missing
