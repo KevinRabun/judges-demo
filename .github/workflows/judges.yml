@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v4
         with:
@@ -25,19 +27,56 @@ jobs:
       - name: TypeScript compile check
         run: npm run build
 
-      - name: Run Judges on demo code
-        id: judges
-        uses: KevinRabun/judges@main
-        with:
-          path: demos
-          format: sarif
-          diff-only: false
-          fail-on-findings: true
-          upload-sarif: true
+      - name: Install Judges CLI
+        run: npm install -g @kevinrabun/judges-cli
 
-      - name: Generate markdown report
+      - name: Run Judges on demo code (Layer 1 — deterministic)
+        id: judges
+        run: |
+          set +e
+          EXIT_CODE=0
+          REPORT=""
+          # Find all changed .ts files in this PR
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD -- 'demos/**/*.ts' 2>/dev/null || echo "")
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No .ts files changed in demos/ — scanning all demo .ts files"
+            CHANGED_FILES=$(find demos -name '*.ts' -type f | sort)
+          fi
+          for file in $CHANGED_FILES; do
+            echo "::group::Evaluating $file"
+            OUTPUT=$(npx judges eval --file "$file" --fail-on-findings 2>&1)
+            FILE_EXIT=$?
+            echo "$OUTPUT"
+            if [ $FILE_EXIT -ne 0 ]; then
+              EXIT_CODE=1
+            fi
+            # Generate SARIF for code scanning
+            SARIF_OUTPUT=$(npx judges eval --file "$file" --format sarif 2>&1 || true)
+            SARIF_NAME=$(echo "$file" | tr '/' '-')
+            if echo "$SARIF_OUTPUT" | jq empty 2>/dev/null; then
+              echo "$SARIF_OUTPUT" > "${SARIF_NAME}.sarif.json"
+            fi
+            # Collect markdown for report
+            MD_OUTPUT=$(npx judges eval --file "$file" --format markdown 2>&1 || true)
+            REPORT="${REPORT}
+          ## ${file}
+
+          ${MD_OUTPUT}
+
+          ---
+          "
+            echo "::endgroup::"
+          done
+          echo "$REPORT" > judges-report.md
+          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
+          exit $EXIT_CODE
+
+      - name: Upload SARIF to GitHub Code Scanning
         if: always()
-        run: npx @kevinrabun/judges-cli eval --file "demos/**/bad.ts" --format markdown > judges-report.md || true
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: .
+        continue-on-error: true
 
       - name: Upload report artifact
         if: always()
