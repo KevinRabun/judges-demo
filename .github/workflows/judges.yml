@@ -72,6 +72,8 @@ jobs:
             echo "::endgroup::"
           done
           echo "$REPORT" > judges-report.md
+          # Write findings to Job Summary (visible on the workflow run page)
+          echo "$REPORT" >> "$GITHUB_STEP_SUMMARY"
           echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
           exit $EXIT_CODE
 
