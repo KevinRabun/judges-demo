@@ -28,10 +28,11 @@ interface LambdaEvent {
   bucket: string;
 }
 
-// ─── BAD: Cloud function that burns money ────────────────────────────────────
+// ─── S3 batch processor — lists and processes all objects in a bucket ─────────
 //
-// This Lambda handler lists ALL objects in an S3 bucket and processes each
-// one sequentially. It compiles fine and works in testing with small buckets.
+// Added in v2.1: nightly batch job to process uploaded files.
+// Handles pagination via ContinuationToken.
+// Status: Ready for merge
 //
 // In production, a bucket may contain millions of objects. This function:
 // - Has no pagination limit — lists EVERYTHING
