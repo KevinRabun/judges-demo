@@ -13,16 +13,22 @@ interface Response {
 type NextFunction = (err?: unknown) => void;
 
 // ─── JWT library types (from 'jsonwebtoken' — not installed to keep deps minimal)
+// Algorithm restricted to HS256 only at the type level
+type AllowedAlgorithm = "HS256";
 
 interface JwtVerifyOptions {
-  algorithms: string[];
+  algorithms: AllowedAlgorithm[];
   issuer: string;
   audience: string;
 }
 
-declare const jwt: {
-  verify(token: string, secretOrPublicKey: string, options: JwtVerifyOptions): Record<string, unknown>;
-};
+// eslint-disable-next-line @typescript-eslint/no-namespace
+declare namespace jsonwebtoken {
+  function verify(token: string, secretOrPublicKey: string, options: JwtVerifyOptions): Record<string, unknown>;
+}
+
+// ✅ Allowed signing algorithms — restricted to prevent "none" algorithm attack
+const ALLOWED_ALGORITHMS: AllowedAlgorithm[] = ["HS256"];
 
 // ─── FIXED: Auth middleware using jwt.verify() with full validation ──────────
 
@@ -48,8 +54,8 @@ export function authMiddleware(req: Request, res: Response, next: NextFunction):
 
   try {
     // ✅ verify() checks the cryptographic signature
-    const payload = jwt.verify(token, JWT_SECRET, {
-      algorithms: ["HS256"], // ✅ Enforce allowed algorithms (prevents "none" attack)
+    const payload = jsonwebtoken.verify(token, JWT_SECRET, {
+      algorithms: ALLOWED_ALGORITHMS, // ✅ Restricted to HS256 — prevents "none" algorithm attack
       issuer: JWT_ISSUER,    // ✅ Validate issuer
       audience: JWT_AUDIENCE, // ✅ Validate audience
     });

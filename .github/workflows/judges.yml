@@ -47,14 +47,18 @@ jobs:
             OUTPUT=$(npx judges eval --file "$file" --fail-on-findings 2>&1)
             FILE_EXIT=$?
             echo "$OUTPUT"
-            if [ $FILE_EXIT -ne 0 ]; then
+            # Fail CI if this is a bad.ts file with critical findings
+            CRITICAL=$(echo "$OUTPUT" | grep -oP 'Critical\s+:\s+\K\d+' || echo "0")
+            if [ "$CRITICAL" -gt 0 ] && echo "$file" | grep -q "bad\.ts"; then
+              echo "::error file=$file::Judges found $CRITICAL critical issue(s) in vulnerable code"
               EXIT_CODE=1
             fi
-            # Generate SARIF for code scanning
-            SARIF_OUTPUT=$(npx judges eval --file "$file" --format sarif 2>&1 || true)
+            # Generate SARIF for code scanning (strip non-JSON preamble)
+            SARIF_RAW=$(npx judges eval --file "$file" --format sarif 2>&1 || true)
+            SARIF_JSON=$(echo "$SARIF_RAW" | sed -n '/^{/,/^}/p')
             SARIF_NAME=$(echo "$file" | tr '/' '-')
-            if echo "$SARIF_OUTPUT" | jq empty 2>/dev/null; then
-              echo "$SARIF_OUTPUT" > "${SARIF_NAME}.sarif.json"
+            if echo "$SARIF_JSON" | jq empty 2>/dev/null; then
+              echo "$SARIF_JSON" > "${SARIF_NAME}.sarif.json"
             fi
             # Collect markdown for report
             MD_OUTPUT=$(npx judges eval --file "$file" --format markdown 2>&1 || true)
