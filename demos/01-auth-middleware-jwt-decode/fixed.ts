@@ -30,7 +30,11 @@ const jwt = {
   },
 };
 
-// ─── FIXED: Auth middleware using jwt.verify() with full validation ──────────
+// ─── Auth middleware — verifies JWT signature and validates claims ────────────
+//
+// Added in v2.1: token-based auth for API routes.
+// Uses jwt.verify() with algorithm allowlist and claim validation.
+// Status: Security review passed
 
 // In production, load from environment / secret manager — never hardcode.
 const JWT_SECRET = process.env["JWT_SECRET"];

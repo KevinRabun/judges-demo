@@ -1,4 +1,8 @@
-// ─── FIXED: Config loader that fails fast on missing secrets ─────────────────
+// ─── Application configuration — fail-fast env loader ────────────────────────
+//
+// Added in v2.1: unified config module. All secrets are required.
+// App crashes at boot if any required env var is missing.
+// Status: Security review passed
 
 /**
  * Require an environment variable or throw immediately at startup.

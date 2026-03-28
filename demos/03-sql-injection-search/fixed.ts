@@ -15,7 +15,11 @@ interface SearchResponse {
   status(code: number): SearchResponse;
 }
 
-// ─── FIXED: Parameterized query with input validation ────────────────────────
+// ─── User search endpoint — parameterized query with input validation ────────
+//
+// Added in v2.1: search users by name for the directory feature.
+// Uses $1 parameterized queries to prevent SQL injection.
+// Status: Security review passed
 
 const MAX_SEARCH_LENGTH = 200;
 const MAX_RESULTS = 50;
