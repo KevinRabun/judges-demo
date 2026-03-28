@@ -55,6 +55,18 @@ See [`fixed.ts`](./fixed.ts) and [`.env.example`](./.env.example).
 ## Run Judges locally
 
 ```bash
+# Layer 1 (deterministic pattern matching)
 npx @kevinrabun/judges-cli eval --file demos/02-config-hardcoded-secrets/bad.ts
 npx @kevinrabun/judges-cli eval --file demos/02-config-hardcoded-secrets/fixed.ts
 ```
+
+### Layer 2 — LLM Judges via MCP
+
+This demo particularly benefits from LLM analysis (Layer 2). The LLM understands
+that `"keyboard-cat"` as a session secret and `"dev-super-secret-key-change-me"`
+as a JWT secret are dangerous — even when linters and pattern matchers see only
+valid string assignments.
+
+1. Open this repo in VS Code (MCP config is in `.vscode/mcp.json`)
+2. Open `bad.ts` and ask Copilot: _"Use judges to evaluate this file"_
+3. The LLM reasons about the **semantic meaning** of the values, not just their syntax

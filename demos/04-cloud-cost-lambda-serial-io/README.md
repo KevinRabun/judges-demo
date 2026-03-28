@@ -67,6 +67,17 @@ See [`fixed.ts`](./fixed.ts) for the corrected implementation.
 ## Run Judges locally
 
 ```bash
+# Layer 1 (deterministic pattern matching)
 npx @kevinrabun/judges-cli eval --file demos/04-cloud-cost-lambda-serial-io/bad.ts
 npx @kevinrabun/judges-cli eval --file demos/04-cloud-cost-lambda-serial-io/fixed.ts
 ```
+
+### Layer 2 — LLM Judges via MCP
+
+This demo is a strong showcase for LLM judges. Pattern matchers can detect
+unbounded loops, but only the LLM can reason about the **cost implications**:
+"this lambda lists millions of S3 objects sequentially, and each invocation
+costs money — this is a cost amplification bomb."
+
+1. Open this repo in VS Code (MCP config is in `.vscode/mcp.json`)
+2. Open `bad.ts` and ask Copilot: _"Use judges to evaluate this file"_

@@ -1,0 +1,9 @@
+{
+  "servers": {
+    "judges": {
+      "command": "npx",
+      "args": ["-y", "@kevinrabun/judges"],
+      "env": {}
+    }
+  }
+}

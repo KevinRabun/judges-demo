@@ -1,6 +1,7 @@
 node_modules/
 dist/
 .env
+.judges-cache/
 *.js
 *.d.ts
 *.js.map

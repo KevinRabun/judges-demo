@@ -9,9 +9,17 @@
     "judge:all": "npx @kevinrabun/judges-cli eval --file \"demos/**/*.ts\" --format markdown"
   },
   "devDependencies": {
-    "typescript": "^5.4.0",
-    "@types/node": "^20.11.0"
+    "@types/node": "^20.11.0",
+    "typescript": "^5.4.0"
   },
-  "keywords": ["judges", "code-review", "security", "demo"],
-  "license": "MIT"
+  "keywords": [
+    "judges",
+    "code-review",
+    "security",
+    "demo"
+  ],
+  "license": "MIT",
+  "dependencies": {
+    "@kevinrabun/judges-cli": "^3.124.0"
+  }
 }

@@ -12,22 +12,16 @@ interface Response {
 
 type NextFunction = (err?: unknown) => void;
 
-// ─── Minimal JWT stub ────────────────────────────────────────────────────────
+// ─── JWT library types (from 'jsonwebtoken' — not installed to keep deps minimal)
 
 interface JwtVerifyOptions {
   algorithms: string[];
   issuer: string;
   audience: string;
-  complete?: boolean;
 }
 
-const jwt = {
-  verify(token: string, secret: string, options: JwtVerifyOptions): Record<string, unknown> {
-    void token;
-    void secret;
-    void options;
-    return {}; // stub — real implementation verifies signature
-  },
+declare const jwt: {
+  verify(token: string, secretOrPublicKey: string, options: JwtVerifyOptions): Record<string, unknown>;
 };
 
 // ─── FIXED: Auth middleware using jwt.verify() with full validation ──────────

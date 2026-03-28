@@ -56,12 +56,16 @@ See [`fixed.ts`](./fixed.ts) for the corrected implementation.
 ## Run Judges locally
 
 ```bash
-# Scan the bad file
+# Layer 1 (deterministic pattern matching)
 npx @kevinrabun/judges-cli eval --file demos/01-auth-middleware-jwt-decode/bad.ts
-
-# Scan the fixed file (should produce no critical/high findings)
 npx @kevinrabun/judges-cli eval --file demos/01-auth-middleware-jwt-decode/fixed.ts
-
-# Compare both
 npx @kevinrabun/judges-cli eval --file demos/01-auth-middleware-jwt-decode/bad.ts --format markdown
 ```
+
+### Layer 2 — LLM Judges via MCP
+
+For deeper, context-aware analysis using LLM reasoning:
+
+1. Open this repo in VS Code (MCP config is in `.vscode/mcp.json`)
+2. Open `bad.ts` and ask Copilot: _"Use judges to evaluate this file"_
+3. The LLM applies 45 expert judge personas to reason about the code — catching that `jwt.decode()` in an auth middleware path is a signature bypass, not just a "function call"

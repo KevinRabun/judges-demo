@@ -59,6 +59,14 @@ See [`fixed.ts`](./fixed.ts) for the corrected implementation.
 ## Run Judges locally
 
 ```bash
+# Layer 1 (deterministic pattern matching)
 npx @kevinrabun/judges-cli eval --file demos/03-sql-injection-search/bad.ts
 npx @kevinrabun/judges-cli eval --file demos/03-sql-injection-search/fixed.ts
 ```
+
+### Layer 2 — LLM Judges via MCP
+
+1. Open this repo in VS Code (MCP config is in `.vscode/mcp.json`)
+2. Open `bad.ts` and ask Copilot: _"Use judges to evaluate this file"_
+3. The LLM traces the data flow from `req.query.q` into the SQL template literal
+   and identifies it as an injection vector with full contextual reasoning

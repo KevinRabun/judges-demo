@@ -62,6 +62,15 @@ See [`fixed.ts`](./fixed.ts) for the corrected implementation.
 ## Run Judges locally
 
 ```bash
+# Layer 1 (deterministic pattern matching)
 npx @kevinrabun/judges-cli eval --file demos/05-logging-pii-password/bad.ts
 npx @kevinrabun/judges-cli eval --file demos/05-logging-pii-password/fixed.ts
 ```
+
+### Layer 2 — LLM Judges via MCP
+
+1. Open this repo in VS Code (MCP config is in `.vscode/mcp.json`)
+2. Open `bad.ts` and ask Copilot: _"Use judges to evaluate this file"_
+3. The LLM identifies that variables named `password` and `email` flowing into
+   `console.log` is a PII leak — understanding the **semantic meaning** of the
+   data, not just the function call pattern
