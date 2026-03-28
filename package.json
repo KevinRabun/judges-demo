@@ -1,0 +1,17 @@
+{
+  "name": "judges-demo",
+  "version": "1.0.0",
+  "description": "\"Judges caught this\" — demo scenarios showing AI-generated code that Judges Panel flags",
+  "private": true,
+  "scripts": {
+    "build": "tsc --noEmit",
+    "judge": "npx @kevinrabun/judges-cli eval --file \"demos/**/bad.ts\" --format markdown --fail-on-findings",
+    "judge:all": "npx @kevinrabun/judges-cli eval --file \"demos/**/*.ts\" --format markdown"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0"
+  },
+  "keywords": ["judges", "code-review", "security", "demo"],
+  "license": "MIT"
+}

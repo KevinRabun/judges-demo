@@ -1,0 +1,47 @@
+name: Judges Code Review
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  security-events: write
+
+jobs:
+  judges:
+    name: Judges Panel Review
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: TypeScript compile check
+        run: npm run build
+
+      - name: Run Judges on demo code
+        id: judges
+        uses: KevinRabun/judges@main
+        with:
+          path: demos
+          format: sarif
+          diff-only: false
+          fail-on-findings: true
+          upload-sarif: true
+
+      - name: Generate markdown report
+        if: always()
+        run: npx @kevinrabun/judges-cli eval --file "demos/**/bad.ts" --format markdown > judges-report.md || true
+
+      - name: Upload report artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: judges-report
+          path: judges-report.md
