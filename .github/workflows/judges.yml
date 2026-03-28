@@ -27,93 +27,29 @@ jobs:
       - name: TypeScript compile check
         run: npm run build
 
-      - name: Install Judges CLI
-        run: npm install -g @kevinrabun/judges-cli
-
-      - name: Run Judges on demo code (Layer 1 — deterministic)
+      - name: Run Judges (official action)
         id: judges
-        run: |
-          set +e
-          EXIT_CODE=0
-          REPORT=""
-          # Find all changed .ts files in this PR
-          CHANGED_FILES=$(git diff --name-only origin/main...HEAD -- 'demos/**/*.ts' 2>/dev/null || echo "")
-          if [ -z "$CHANGED_FILES" ]; then
-            echo "No .ts files changed in demos/ — scanning all demo .ts files"
-            CHANGED_FILES=$(find demos -name '*.ts' -type f | sort)
-          fi
-          for file in $CHANGED_FILES; do
-            echo "::group::Evaluating $file"
-            OUTPUT=$(npx judges eval --file "$file" --fail-on-findings 2>&1)
-            FILE_EXIT=$?
-            echo "$OUTPUT"
-            # Fail CI if this is a bad.ts file with critical findings
-            CRITICAL=$(echo "$OUTPUT" | grep -oP 'Critical\s+:\s+\K\d+' || echo "0")
-            if [ "$CRITICAL" -gt 0 ] && echo "$file" | grep -q "bad\.ts"; then
-              echo "::error file=$file::Judges found $CRITICAL critical issue(s) in vulnerable code"
-              EXIT_CODE=1
-            fi
-            # Generate SARIF for code scanning (stderr has info messages, stdout is JSON)
-            SARIF_NAME=$(echo "$file" | tr '/' '-').sarif
-            npx judges eval --file "$file" --format sarif > "${SARIF_NAME}" 2>/dev/null || true
-            # Validate the SARIF file is valid JSON, remove if not
-            if ! jq empty "${SARIF_NAME}" 2>/dev/null; then
-              rm -f "${SARIF_NAME}"
-            fi
-            # Collect markdown for report
-            MD_OUTPUT=$(npx judges eval --file "$file" --format markdown 2>&1 || true)
-            REPORT="${REPORT}
-          ## ${file}
+        uses: KevinRabun/judges@v3.124.3
+        with:
+          path: demos
+          format: sarif
+          diff-only: false
+          fail-on-findings: true
+          upload-sarif: true
 
-          ${MD_OUTPUT}
-
-          ---
-          "
-            echo "::endgroup::"
-          done
-          echo "$REPORT" > judges-report.md
-          # Write findings to Job Summary (visible on the workflow run page)
-          echo "$REPORT" >> "$GITHUB_STEP_SUMMARY"
-          echo "exit_code=$EXIT_CODE" >> "$GITHUB_OUTPUT"
-          exit $EXIT_CODE
-
-      - name: Merge SARIF files into single upload
+      - name: Generate markdown report
         if: always()
         run: |
-          # Merge all per-file SARIF results into one file with a single run
-          # CodeQL requires one run per category per upload
-          SARIF_FILES=$(find . -maxdepth 1 -name '*.sarif' -type f)
-          if [ -z "$SARIF_FILES" ]; then
-            echo "No SARIF files found"
-            exit 0
-          fi
-          # Merge: take the first file's structure, combine all results and rules
-          jq -s '
-            {
-              "$schema": .[0]."$schema",
-              "version": .[0].version,
-              "runs": [{
-                "tool": .[0].runs[0].tool,
-                "results": [.[].runs[0].results[] // empty],
-                "columnKind": "utf16CodeUnits"
-              }]
-            }
-          ' $SARIF_FILES > judges-results.sarif 2>/dev/null || true
-          if jq empty judges-results.sarif 2>/dev/null; then
-            echo "Merged $(echo $SARIF_FILES | wc -w) SARIF files into judges-results.sarif"
-            echo "Total results: $(jq '.runs[0].results | length' judges-results.sarif)"
-          else
-            echo "SARIF merge failed"
-            rm -f judges-results.sarif
-          fi
-
-      - name: Upload SARIF to GitHub Code Scanning
-        if: always() && hashFiles('judges-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: judges-results.sarif
-          category: judges-panel
-        continue-on-error: true
+          npm install -g @kevinrabun/judges-cli
+          REPORT="# Judges Panel — Findings Report\n\n"
+          for file in $(find demos -name '*.ts' -type f | sort); do
+            echo "::group::Evaluating $file"
+            MD_OUTPUT=$(npx judges eval --file "$file" --format markdown 2>&1 || true)
+            REPORT="${REPORT}## ${file}\n\n${MD_OUTPUT}\n\n---\n\n"
+            echo "::endgroup::"
+          done
+          echo -e "$REPORT" > judges-report.md
+          echo -e "$REPORT" >> "$GITHUB_STEP_SUMMARY"
 
       - name: Upload report artifact
         if: always()
