@@ -13,11 +13,11 @@ jobs:
     name: Judges Panel Review
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
           node-version: "20"
 
@@ -107,7 +107,7 @@ jobs:
 
       - name: Upload SARIF to GitHub Code Scanning
         if: always() && hashFiles('judges-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v3
+        uses: github/codeql-action/upload-sarif@v4
         with:
           sarif_file: judges-results.sarif
           category: judges-panel
@@ -115,7 +115,7 @@ jobs:
 
       - name: Upload report artifact
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: judges-report
           path: judges-report.md
