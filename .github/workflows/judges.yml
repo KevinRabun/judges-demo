@@ -30,12 +30,12 @@ jobs:
 
       - name: Run Judges (official action)
         id: judges
-        uses: KevinRabun/judges@v3.124.4
+        uses: KevinRabun/judges@v3.124.5
         continue-on-error: true
         with:
           path: demos
           format: sarif
-          diff-only: false
+          diff-only: true
           fail-on-findings: true
           upload-sarif: true
 
