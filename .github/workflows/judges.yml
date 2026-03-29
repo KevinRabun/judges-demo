@@ -30,62 +30,27 @@ jobs:
 
       - name: Run Judges (official action)
         id: judges
-        uses: KevinRabun/judges@v3.124.3
+        uses: KevinRabun/judges@v3.124.4
         with:
           path: demos
-          format: text
+          format: sarif
           diff-only: false
           fail-on-findings: true
-          upload-sarif: false
+          upload-sarif: true
 
-      - name: Generate SARIF and markdown report
+      - name: Generate markdown report
         if: always()
         run: |
           npm install -g @kevinrabun/judges-cli
           REPORT="# Judges Panel — Findings Report\n\n"
-          mkdir -p sarif-parts
           for file in $(find demos -name '*.ts' -type f | sort); do
             echo "::group::Evaluating $file"
-            # Generate SARIF (eval --format sarif produces valid JSON on stdout)
-            SARIF_NAME="sarif-parts/$(echo "$file" | tr '/' '-').sarif"
-            npx judges eval --file "$file" --format sarif > "$SARIF_NAME" 2>/dev/null || true
-            if ! jq empty "$SARIF_NAME" 2>/dev/null; then
-              rm -f "$SARIF_NAME"
-            fi
-            # Generate markdown for report + summary
             MD_OUTPUT=$(npx judges eval --file "$file" --format markdown 2>&1 || true)
             REPORT="${REPORT}## ${file}\n\n${MD_OUTPUT}\n\n---\n\n"
             echo "::endgroup::"
           done
           echo -e "$REPORT" > judges-report.md
           echo -e "$REPORT" >> "$GITHUB_STEP_SUMMARY"
-
-          # Merge all per-file SARIF into one file (CodeQL requires single run per category)
-          SARIF_FILES=$(find sarif-parts -name '*.sarif' -type f 2>/dev/null)
-          if [ -n "$SARIF_FILES" ]; then
-            jq -s '{
-              "$schema": .[0]."$schema",
-              version: .[0].version,
-              runs: [{
-                tool: .[0].runs[0].tool,
-                results: [.[].runs[0].results[]],
-                columnKind: "utf16CodeUnits"
-              }]
-            }' $SARIF_FILES > judges-results.sarif 2>/dev/null || true
-            if jq empty judges-results.sarif 2>/dev/null; then
-              echo "Merged $(echo $SARIF_FILES | wc -w) SARIF files — $(jq '.runs[0].results | length' judges-results.sarif) results"
-            else
-              rm -f judges-results.sarif
-            fi
-          fi
-
-      - name: Upload SARIF to GitHub Code Scanning
-        if: always() && hashFiles('judges-results.sarif') != ''
-        uses: github/codeql-action/upload-sarif@v4
-        with:
-          sarif_file: judges-results.sarif
-          category: judges-panel
-        continue-on-error: true
 
       - name: Upload report artifact
         if: always()
