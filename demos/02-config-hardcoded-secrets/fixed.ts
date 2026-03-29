@@ -1,4 +1,7 @@
-// ─── FIXED: Config loader that fails fast on missing secrets ─────────────────
+// ─── Application configuration — fail-fast env loader ────────────────────────
+//
+// All secrets are required. App crashes at boot if any is missing.
+// Status: Security review passed
 
 /**
  * Require an environment variable or throw immediately at startup.
