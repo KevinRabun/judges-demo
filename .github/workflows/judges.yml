@@ -31,12 +31,34 @@ jobs:
       - name: Run Judges (official action)
         id: judges
         uses: KevinRabun/judges@v3.124.4
+        continue-on-error: true
         with:
           path: demos
           format: sarif
           diff-only: false
           fail-on-findings: true
           upload-sarif: true
+
+      - name: Upload SARIF to Code Scanning (fallback)
+        if: always() && hashFiles('judges-results.sarif') != ''
+        uses: github/codeql-action/upload-sarif@v4
+        with:
+          sarif_file: judges-results.sarif
+          category: judges-panel
+        continue-on-error: true
+
+      - name: Fail if Judges found critical/high findings
+        if: always()
+        run: |
+          if [ "${{ steps.judges.outputs.verdict }}" = "fail" ] || [ "${{ steps.judges.outputs.verdict }}" = "FAIL" ]; then
+            echo "::error::Judges verdict: FAIL (critical=${{ steps.judges.outputs.critical }}, high=${{ steps.judges.outputs.high }})"
+            exit 1
+          fi
+          # Also fail if the action step itself failed (findings detected)
+          if [ "${{ steps.judges.outcome }}" = "failure" ]; then
+            echo "::error::Judges action reported failure"
+            exit 1
+          fi
 
       - name: Generate markdown report
         if: always()
