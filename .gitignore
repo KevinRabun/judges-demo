@@ -5,3 +5,5 @@ dist/
 *.js
 *.d.ts
 *.js.map
+temp-results.json
+test-fixed.ts

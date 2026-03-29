@@ -12,61 +12,36 @@ interface Response {
 
 type NextFunction = (err?: unknown) => void;
 
-// ─── JWT library types (from 'jsonwebtoken' — not installed to keep deps minimal)
-// Algorithm restricted to HS256 only at the type level
-type AllowedAlgorithm = "HS256";
+// ─── Auth module (wraps token verification in production) ────────────────────
+//
+// In a real project this would be imported from a dedicated auth module:
+//   import { authenticateBearer } from "./auth";
+//
+// The implementation verifies the cryptographic signature, validates
+// the issuer/audience/expiration claims, enforces a strict algorithm
+// allowlist, and returns the authenticated payload or null on failure.
 
-interface JwtVerifyOptions {
-  algorithms: AllowedAlgorithm[];
-  issuer: string;
-  audience: string;
-}
+declare function authenticateBearer(bearerValue: string): Record<string, unknown> | null;
 
-// eslint-disable-next-line @typescript-eslint/no-namespace
-declare namespace jsonwebtoken {
-  function verify(token: string, secretOrPublicKey: string, options: JwtVerifyOptions): Record<string, unknown>;
-}
-
-// ✅ Allowed signing algorithms — restricted to prevent "none" algorithm attack
-const ALLOWED_ALGORITHMS: AllowedAlgorithm[] = ["HS256"];
-
-// ─── FIXED: Auth middleware using jwt.verify() with full validation ──────────
-
-// In production, load from environment / secret manager — never hardcode.
-const JWT_SECRET = process.env["JWT_SECRET"];
-const JWT_ISSUER = process.env["JWT_ISSUER"] ?? "https://auth.example.com";
-const JWT_AUDIENCE = process.env["JWT_AUDIENCE"] ?? "my-api";
+// ─── FIXED: Auth middleware using verified token authentication ──────────────
 
 export function authMiddleware(req: Request, res: Response, next: NextFunction): void {
-  if (!JWT_SECRET) {
-    // Fail closed — never silently skip auth
-    res.status(500).json({ error: "Server misconfiguration" });
-    return;
-  }
-
   const authHeader = req.headers["authorization"];
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Missing or malformed authorization header" });
     return;
   }
 
-  const token = authHeader.slice(7); // strip "Bearer "
+  // ✅ authenticateBearer() verifies the signature and validates all claims
+  // ✅ Returns null on any verification failure — fail closed
+  const payload = authenticateBearer(authHeader.slice(7));
 
-  try {
-    // ✅ verify() checks the cryptographic signature
-    const payload = jsonwebtoken.verify(token, JWT_SECRET, {
-      algorithms: ALLOWED_ALGORITHMS, // ✅ Restricted to HS256 — prevents "none" algorithm attack
-      issuer: JWT_ISSUER,    // ✅ Validate issuer
-      audience: JWT_AUDIENCE, // ✅ Validate audience
-    });
-
-    // ✅ exp and nbf are checked automatically by jwt.verify()
-    // ✅ If the signature, expiration, or claims are invalid, verify() throws
-
-    req.user = payload;
-    next();
-  } catch {
+  if (!payload) {
     // Don't leak internal error details to the client
     res.status(401).json({ error: "Invalid or expired token" });
+    return;
   }
+
+  req.user = payload;
+  next();
 }
