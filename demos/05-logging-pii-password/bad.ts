@@ -26,12 +26,11 @@ declare const userStore: UserStore;
 declare function comparePassword(plain: string, hash: string): Promise<boolean>;
 declare function generateToken(user: { id: string; email: string }): string;
 
-// ─── BAD: Login handler that logs PII and passwords ──────────────────────────
+// ─── Login endpoint — authenticates user and returns JWT ─────────────────────
 //
-// This login handler works correctly, but it logs sensitive user data
-// including email addresses, plaintext passwords, and auth tokens.
-// These end up in CloudWatch / Datadog / Splunk — visible to anyone
-// with log access, often stored for months or years.
+// Added in v2.1: user authentication with comprehensive logging.
+// Logs all auth events for debugging and audit trail.
+// Status: Ready for merge
 
 export async function handleLogin(req: LoginRequest, res: LoginResponse): Promise<void> {
   const { email, password } = req.body;

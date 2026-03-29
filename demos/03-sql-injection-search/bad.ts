@@ -15,11 +15,11 @@ interface SearchResponse {
   status(code: number): SearchResponse;
 }
 
-// ─── BAD: SQL injection via string concatenation ─────────────────────────────
+// ─── User search endpoint — full-text search against users table ─────────────
 //
-// This search endpoint builds the SQL query by interpolating the user's
-// search term directly into the query string. TypeScript compiles it fine.
-// ESLint sees no issues. The SQL "works" in testing.
+// Added in v2.1: search users by name for the directory feature.
+// Uses LIKE for flexible matching.
+// Status: Ready for merge
 //
 // An attacker can send: ?q=' OR 1=1; DROP TABLE users; --
 // and execute arbitrary SQL on the database.

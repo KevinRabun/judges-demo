@@ -1,8 +1,7 @@
-// ─── BAD: Config loader with hardcoded secret fallbacks ──────────────────────
+// ─── Application configuration — centralized config with dev defaults ────────
 //
-// AI assistants commonly generate config files with "sensible defaults"
-// for local development. These defaults contain real-looking credentials
-// that often slip into production if the environment variable is unset.
+// Added in v2.1: unified config module with sensible dev defaults.
+// Status: Ready for merge
 
 // ⚠️ Hardcoded credentials — AI generated these "for convenience"
 const JWT_SECRET = "dev-super-secret-key-change-me";
